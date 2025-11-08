@@ -1,8 +1,22 @@
 from fastapi import FastAPI
 from pytrends.request import TrendReq
+from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
+import pandas as pd
 
 app = FastAPI()
+
+# Allow both localhost and deployed frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",        # for local Next.js dev
+        "https://<your-vercel-domain>.vercel.app"  # replace with your actual Vercel domain
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/analyze")
 def analyze(keyword: str):
@@ -36,8 +50,20 @@ def analyze(keyword: str):
     # Composite emerging score combining growth rate, momentum, and volatility (how likely is this a trend rather than a fad)
     data['emerging_score'] = (data['growth_rate'] * data['momentum']) / data['volatility'].replace(0, np.nan).fillna(1e-6)
 
+    # Convert to JSON-safe Python values
+    market_data = data.reset_index().to_dict(orient="records")
+    for row in market_data:
+        for k, v in row.items():
+            if hasattr(v, "item"):
+                row[k] = v.item()
+            elif isinstance(v, np.generic):
+                row[k] = v.item()
+            elif isinstance(v, pd.Timestamp):
+                row[k] = v.strftime("%Y-%m-%d")
+
     result = {
-        "marketData": data,
+        "keyword": keyword,
+        "marketData": market_data,
         "keyInsights": [
             f"{keyword} placeholder insight 1",
             f"{keyword} placeholder insight 2"
