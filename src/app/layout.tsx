@@ -16,7 +16,7 @@ export const metadata = {
   title: "Trend Insights",
   description: "Analyze trending topics intelligently",
   icons: {
-    icon: "/icon.png", // or your custom path
+    icon: "/logo.png",
   },
 };
 
